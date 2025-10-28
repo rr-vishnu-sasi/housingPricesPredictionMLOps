@@ -1,0 +1,34 @@
+# Core ML Libraries
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+
+# Configuration Management
+pyyaml>=6.0
+
+# Model Serialization
+joblib>=1.3.0
+
+# Optional: Advanced MLOps Tools (uncomment as needed)
+# mlflow>=2.8.0              # Experiment tracking and model registry
+# dvc>=3.0.0                 # Data version control
+# great-expectations>=0.17.0  # Data validation
+# fastapi>=0.104.0           # API serving
+# uvicorn>=0.24.0            # ASGI server
+# pydantic>=2.4.0            # Data validation
+# prometheus-client>=0.18.0   # Metrics monitoring
+# evidently>=0.4.0           # ML monitoring and drift detection
+
+# Development Tools
+jupyter>=1.0.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Testing (recommended for production)
+# pytest>=7.4.0
+# pytest-cov>=4.1.0
+
+# Code Quality (recommended for production)
+# black>=23.9.0
+# flake8>=6.1.0
+# mypy>=1.5.0

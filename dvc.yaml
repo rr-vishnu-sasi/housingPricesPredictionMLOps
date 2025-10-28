@@ -1,0 +1,99 @@
+# DVC Pipeline Configuration
+#
+# What is DVC?
+# DVC (Data Version Control) is like Git for data and ML pipelines.
+# It helps you:
+# - Track data changes (like Git tracks code)
+# - Define pipeline stages
+# - Cache results (don't rerun if inputs haven't changed)
+# - Reproduce experiments exactly
+#
+# How DVC Works:
+# 1. You define stages (steps) of your pipeline
+# 2. Each stage has: command, inputs (deps), outputs (outs)
+# 3. DVC tracks when inputs change
+# 4. Only reruns stages when needed (smart caching!)
+
+stages:
+  # ========== STAGE 1: DATA INGESTION ==========
+  ingest_data:
+    # Command to run this stage
+    cmd: python pipeline/stage_01_ingest_data.py
+
+    # Dependencies (inputs): If these change, stage reruns
+    deps:
+      - pipeline/stage_01_ingest_data.py  # The script itself
+      - src/data/ingest.py                # Data ingestion code
+      - config/config.yaml                # Configuration
+
+    # Outputs: Files produced by this stage
+    outs:
+      - data/raw/housing_data.csv         # Raw data
+      - data/processed/housing_processed.csv  # Cleaned data
+      - logs/data_quality_report.json     # Quality report
+
+    # Description
+    desc: "Fetch California Housing data and validate quality"
+
+  # ========== STAGE 2: FEATURE ENGINEERING ==========
+  feature_engineering:
+    # Command to run
+    cmd: python pipeline/stage_02_feature_engineering.py
+
+    # Dependencies: If these change, stage reruns
+    deps:
+      - pipeline/stage_02_feature_engineering.py
+      - src/features/engineer.py
+      - config/config.yaml
+      - data/processed/housing_processed.csv  # Output from stage 1
+
+    # Outputs
+    outs:
+      - data/features/housing_features.csv    # Featured data
+      - models/saved_models/scaler.joblib     # Scaler artifact
+      - models/saved_models/encoder.joblib    # Encoder artifact
+      - models/saved_models/feature_names.joblib  # Feature names
+
+    # Description
+    desc: "Create features, encode categories, and scale numbers"
+
+  # ========== STAGE 3: MODEL TRAINING ==========
+  train_model:
+    # Command to run
+    cmd: python pipeline/stage_03_train_model.py
+
+    # Dependencies
+    deps:
+      - pipeline/stage_03_train_model.py
+      - src/models/train.py
+      - src/evaluation/evaluate.py
+      - src/models/registry.py
+      - config/config.yaml
+      - data/features/housing_features.csv  # Output from stage 2
+      - models/saved_models/scaler.joblib   # Artifacts from stage 2
+      - models/saved_models/encoder.joblib
+
+    # Outputs
+    outs:
+      - models/saved_models/model_random_forest_*.joblib:
+          cache: false  # Don't cache model files (they're large)
+      - models/model_registry/registry.json:
+          cache: false  # Don't cache registry
+      - logs/evaluation_report.json
+
+    # Metrics to track (DVC can compare these across runs!)
+    metrics:
+      - logs/evaluation_report.json:
+          cache: false
+
+    # Description
+    desc: "Train model, evaluate, and register in model registry"
+
+# Pipeline Parameters (can be overridden)
+# These come from config/config.yaml but can be specified here too
+params:
+  - config/config.yaml:
+      - model.type
+      - model.hyperparameters
+      - data.validation_split
+      - data.random_state
