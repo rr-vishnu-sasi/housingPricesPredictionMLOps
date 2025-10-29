@@ -78,8 +78,10 @@ docs/_build/
 mlruns/
 
 # DVC
-.dvc/
-*.dvc
+# Track .dvc directory but ignore cache
+.dvc/cache
+.dvc/tmp
+# Track .dvc files (they store data references)
 
 # Temporary files
 *.tmp
