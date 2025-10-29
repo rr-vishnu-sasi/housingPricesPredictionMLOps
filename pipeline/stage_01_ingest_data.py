@@ -16,7 +16,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.utils import load_config
+from src.utils import load_config, save_json
 from src.data.ingest import DataIngestor
 from src.pipeline_logger import PipelineLogger
 
@@ -59,6 +59,10 @@ def run_data_ingestion():
         # Log quality checks
         for check in quality_report['checks_performed']:
             logger.info(f"Quality check performed: {check}")
+
+        # Save quality report for DVC tracking
+        save_json(quality_report, "logs/data_quality_report.json")
+        logger.info("Quality report saved to: logs/data_quality_report.json")
 
         logger.stage_end("Data Ingestion", success=True)
         return True

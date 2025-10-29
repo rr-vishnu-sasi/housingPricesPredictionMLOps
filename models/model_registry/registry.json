@@ -1,9 +1,9 @@
 {
     "models": [
         {
-            "version_id": "v_20251025_110019",
-            "model_path": "models/saved_models/model_random_forest_20251025_110019.joblib",
-            "registered_at": "2025-10-25T11:00:19.201397",
+            "version_id": "v_20251029_083412",
+            "model_path": "models/saved_models/model_random_forest_20251029_083412.joblib",
+            "registered_at": "2025-10-29T08:34:12.846855",
             "stage": "staging",
             "metadata": {
                 "model_type": "random_forest",
@@ -18,96 +18,45 @@
                 "training_samples": 16512,
                 "validation_samples": 4128,
                 "feature_count": 15,
-                "training_duration_seconds": 1.229912,
-                "data_quality_report": {
-                    "total_rows": 20640,
-                    "total_columns": 10,
-                    "checks_performed": [
-                        "missing_values",
-                        "duplicates",
-                        "outliers"
-                    ],
-                    "missing_values": {},
-                    "duplicates": 0,
-                    "outliers": {
-                        "median_income": {
-                            "count": 140,
-                            "percentage": 0.6782945736434108
-                        },
-                        "housing_median_age": {
-                            "count": 0,
-                            "percentage": 0.0
-                        },
-                        "population": {
-                            "count": 421,
-                            "percentage": 2.0397286821705425
-                        },
-                        "latitude": {
-                            "count": 0,
-                            "percentage": 0.0
-                        },
-                        "longitude": {
-                            "count": 0,
-                            "percentage": 0.0
-                        },
-                        "median_house_value": {
-                            "count": 0,
-                            "percentage": 0.0
-                        },
-                        "total_rooms": {
-                            "count": 494,
-                            "percentage": 2.393410852713178
-                        },
-                        "total_bedrooms": {
-                            "count": 441,
-                            "percentage": 2.136627906976744
-                        },
-                        "households": {
-                            "count": 415,
-                            "percentage": 2.0106589147286824
-                        }
-                    },
-                    "final_rows": 20640,
-                    "rows_removed": 0
-                }
+                "training_duration_seconds": 1.22791
             },
             "evaluation": {
                 "metrics": {
-                    "rmse": 48726.11109747688,
-                    "mae": 31238.860667017143,
-                    "r2_score": 0.8188173354954539,
-                    "mape": 17.367455834934535
+                    "rmse": 48726.452055076836,
+                    "mae": 31238.790816466375,
+                    "r2_score": 0.8188147998601985,
+                    "mape": 17.366957201209637
                 },
                 "threshold_checks": {
                     "rmse_threshold": true,
                     "r2_threshold": true
                 },
                 "residual_analysis": {
-                    "mean_residual": -535.5983142460105,
-                    "std_residual": 48723.16735526783,
+                    "mean_residual": -534.3855078022121,
+                    "std_residual": 48723.52165027435,
                     "min_residual": -286450.5554603174,
-                    "max_residual": 308737.3138095237,
-                    "median_residual": -4393.570528051707,
+                    "max_residual": 308737.3138095238,
+                    "median_residual": -4390.821851849785,
                     "q25_residual": -21807.955955434532,
-                    "q75_residual": 14335.637369401702
+                    "q75_residual": 14335.637369401724
                 },
                 "all_checks_passed": true,
                 "feature_importance": {
-                    "median_income": 0.5241861767464808,
-                    "population_per_household": 0.1371694141426188,
-                    "latitude": 0.08609467951338608,
-                    "longitude": 0.0710003878286104,
-                    "housing_median_age": 0.04383131209822136,
-                    "rooms_per_household": 0.023846239233037275,
-                    "ocean_proximity_NEAR OCEAN": 0.02282119902480819,
-                    "bedrooms_per_room": 0.021164209671688642,
-                    "ocean_proximity_NEAR BAY": 0.016516784458280913,
-                    "ocean_proximity_INLAND": 0.013889495435185157,
-                    "total_rooms": 0.010131406942731205,
-                    "population": 0.010109976053226055,
-                    "total_bedrooms": 0.009820076383052974,
-                    "households": 0.00882236947210863,
-                    "ocean_proximity_<1H OCEAN": 0.0005962729965634727
+                    "median_income": 0.5241922384032404,
+                    "population_per_household": 0.1371623881417859,
+                    "latitude": 0.08609471661941263,
+                    "longitude": 0.0709989135551539,
+                    "housing_median_age": 0.04383141473595558,
+                    "rooms_per_household": 0.023846041969698535,
+                    "ocean_proximity_NEAR OCEAN": 0.022821199024808194,
+                    "bedrooms_per_room": 0.021164809679230304,
+                    "ocean_proximity_NEAR BAY": 0.016518504954103688,
+                    "ocean_proximity_INLAND": 0.013889495435185159,
+                    "total_rooms": 0.010131497340233357,
+                    "population": 0.010110029881784128,
+                    "total_bedrooms": 0.009819915471513155,
+                    "households": 0.008822561791331717,
+                    "ocean_proximity_<1H OCEAN": 0.0005962729965634728
                 }
             },
             "tags": [],
@@ -115,11 +64,11 @@
             "stage_history": [
                 {
                     "stage": "staging",
-                    "timestamp": "2025-10-25T11:00:19.201398"
+                    "timestamp": "2025-10-29T08:34:12.846856"
                 }
             ]
         }
     ],
-    "created_at": "2025-10-25T11:00:19.201158",
-    "last_updated": "2025-10-25T11:00:19.201400"
+    "created_at": "2025-10-29T08:34:12.846632",
+    "last_updated": "2025-10-29T08:34:12.846858"
 }

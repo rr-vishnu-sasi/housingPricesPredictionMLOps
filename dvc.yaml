@@ -75,11 +75,8 @@ stages:
 
     # Outputs
     outs:
-      - models/saved_models/model_random_forest_*.joblib:
-          cache: false  # Don't cache model files (they're large)
       - models/model_registry/registry.json:
           cache: false  # Don't cache registry
-      - logs/evaluation_report.json
 
     # Metrics to track (DVC can compare these across runs!)
     metrics:
@@ -90,10 +87,9 @@ stages:
     desc: "Train model, evaluate, and register in model registry"
 
 # Pipeline Parameters (can be overridden)
-# These come from config/config.yaml but can be specified here too
-params:
-  - config/config.yaml:
-      - model.type
-      - model.hyperparameters
-      - data.validation_split
-      - data.random_state
+# These come from config/config.yaml
+# DVC tracks these to detect changes
+# Uncomment to enable parameter tracking:
+# params:
+#   - config/config.yaml:
+#       model.type,model.hyperparameters,data.validation_split,data.random_state
