@@ -57,17 +57,18 @@ stages:
     # Description
     desc: "Create features, encode categories, and scale numbers"
 
-  # ========== STAGE 3: MODEL TRAINING ==========
+  # ========== STAGE 3: MODEL TRAINING (with MLflow) ==========
   train_model:
-    # Command to run
-    cmd: python pipeline/stage_03_train_model.py
+    # Command to run (with MLflow tracking)
+    cmd: python pipeline/stage_03_train_model_mlflow.py
 
     # Dependencies
     deps:
-      - pipeline/stage_03_train_model.py
+      - pipeline/stage_03_train_model_mlflow.py
       - src/models/train.py
       - src/evaluation/evaluate.py
       - src/models/registry.py
+      - src/mlflow_tracker.py
       - config/config.yaml
       - data/features/housing_features.csv  # Output from stage 2
       - models/saved_models/scaler.joblib   # Artifacts from stage 2

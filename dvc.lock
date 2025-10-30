@@ -5,8 +5,8 @@ stages:
     deps:
     - path: config/config.yaml
       hash: md5
-      md5: 627c496a1f8ec616c2df62810efbef3f
-      size: 2503
+      md5: 5a7d20e133634d5fbd11fb600c4fa6e9
+      size: 2490
     - path: pipeline/stage_01_ingest_data.py
       hash: md5
       md5: c6f74d24a6e6e4b15a65bc6ce97a6560
@@ -33,8 +33,8 @@ stages:
     deps:
     - path: config/config.yaml
       hash: md5
-      md5: 627c496a1f8ec616c2df62810efbef3f
-      size: 2503
+      md5: 5a7d20e133634d5fbd11fb600c4fa6e9
+      size: 2490
     - path: data/processed/housing_processed.csv
       hash: md5
       md5: 2769a7cdcc4e103b02dda2a180d667ce
@@ -65,12 +65,12 @@ stages:
       md5: 756dcb6d34706704d23b1392e1099f75
       size: 1503
   train_model:
-    cmd: python pipeline/stage_03_train_model.py
+    cmd: python pipeline/stage_03_train_model_mlflow.py
     deps:
     - path: config/config.yaml
       hash: md5
-      md5: 627c496a1f8ec616c2df62810efbef3f
-      size: 2503
+      md5: 5a7d20e133634d5fbd11fb600c4fa6e9
+      size: 2490
     - path: data/features/housing_features.csv
       hash: md5
       md5: f085afc9a01899f1d974350dec5417bf
@@ -83,14 +83,18 @@ stages:
       hash: md5
       md5: 756dcb6d34706704d23b1392e1099f75
       size: 1503
-    - path: pipeline/stage_03_train_model.py
+    - path: pipeline/stage_03_train_model_mlflow.py
       hash: md5
-      md5: 59d857de77902e2b6bcf958af716e91d
-      size: 4589
+      md5: 41017e9b969244e98e80a54bdedaed0e
+      size: 7500
     - path: src/evaluation/evaluate.py
       hash: md5
       md5: 8715b69bdae781b823bcebfacc86d799
       size: 10568
+    - path: src/mlflow_tracker.py
+      hash: md5
+      md5: aa703ba142055e226e6b0eadf776bc4d
+      size: 6781
     - path: src/models/registry.py
       hash: md5
       md5: 692c9ebad0a2fe29fc013bd28ff89ac7
@@ -102,9 +106,9 @@ stages:
     outs:
     - path: logs/evaluation_report.json
       hash: md5
-      md5: b6e2b968e9ac378b3fcf8e76b929a603
-      size: 1428
+      md5: 45a49f4fcfc08ea5270eb9c5fb70d0b7
+      size: 1422
     - path: models/model_registry/registry.json
       hash: md5
-      md5: c85e65bc6bcf2bf01e4b8a49f242be05
-      size: 3082
+      md5: 391b756277011dc158276749a2e8b0b0
+      size: 3146
