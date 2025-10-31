@@ -41,7 +41,8 @@ def serve_model_mlflow_cli(model_name: str = None, port: int = 5001):
     config = load_config()
 
     if model_name is None:
-        model_name = config['serving']['model_name']
+        # Use pipeline model that accepts RAW data
+        model_name = "housing_price_predictor_pipeline"
 
     print(f"\n📦 Model to serve: {model_name}")
     print(f"🌐 API will run on: http://localhost:{port}")

@@ -5,7 +5,7 @@ stages:
     deps:
     - path: config/config.yaml
       hash: md5
-      md5: 5a7d20e133634d5fbd11fb600c4fa6e9
+      md5: a54b23bc6dd1a53633f6bac7a661dc78
       size: 2490
     - path: pipeline/stage_01_ingest_data.py
       hash: md5
@@ -33,7 +33,7 @@ stages:
     deps:
     - path: config/config.yaml
       hash: md5
-      md5: 5a7d20e133634d5fbd11fb600c4fa6e9
+      md5: a54b23bc6dd1a53633f6bac7a661dc78
       size: 2490
     - path: data/processed/housing_processed.csv
       hash: md5
@@ -69,7 +69,7 @@ stages:
     deps:
     - path: config/config.yaml
       hash: md5
-      md5: 5a7d20e133634d5fbd11fb600c4fa6e9
+      md5: a54b23bc6dd1a53633f6bac7a661dc78
       size: 2490
     - path: data/features/housing_features.csv
       hash: md5
@@ -106,9 +106,9 @@ stages:
     outs:
     - path: logs/evaluation_report.json
       hash: md5
-      md5: 45a49f4fcfc08ea5270eb9c5fb70d0b7
-      size: 1422
+      md5: 9189b50ba453696f4d4773e5f558b539
+      size: 1423
     - path: models/model_registry/registry.json
       hash: md5
-      md5: 391b756277011dc158276749a2e8b0b0
-      size: 3146
+      md5: 59d676b17433b04ceded73c2a97970ef
+      size: 3147
