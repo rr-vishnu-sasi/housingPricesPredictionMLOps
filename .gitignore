@@ -22,6 +22,7 @@ wheels/
 
 # Virtual Environments
 .venv/
+.venv_airflow/
 venv/
 ENV/
 env/
@@ -76,6 +77,14 @@ docs/_build/
 
 # MLflow
 mlruns/
+
+# Airflow
+airflow/airflow.db
+airflow/airflow.cfg
+airflow/webserver_config.py
+airflow/logs/**/*.log
+airflow/logs/scheduler/
+airflow/__pycache__/
 
 # DVC
 # Track .dvc directory but ignore cache

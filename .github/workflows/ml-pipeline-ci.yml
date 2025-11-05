@@ -1,0 +1,416 @@
+# GitHub Actions CI/CD Pipeline for ML
+# Triggers on: push to main, pull requests
+# Does: Data validation → Model training → Artifact push to registry
+
+name: ML Pipeline CI/CD
+
+on:
+  # Trigger on push to main branch
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'pipeline/**'
+      - 'config/config.yaml'
+      - 'requirements.txt'
+      - 'dvc.yaml'
+
+  # Trigger on pull requests to main
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'pipeline/**'
+      - 'config/config.yaml'
+      - 'requirements.txt'
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+# Environment variables (shared across all jobs)
+env:
+  PYTHON_VERSION: '3.12'
+  MLFLOW_TRACKING_URI: 'file:./logs/mlruns'
+
+jobs:
+  # ============================================================================
+  # JOB 1: Data Validation
+  # ============================================================================
+  data-validation:
+    name: 🔍 Data Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 📦 Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🔍 Run data validation
+        run: |
+          echo "Running data quality checks..."
+          python pipeline/stage_01_ingest_data.py
+
+          # Check if data quality report exists
+          if [ ! -f "logs/data_quality_report.json" ]; then
+            echo "❌ Data quality report not generated!"
+            exit 1
+          fi
+
+          echo "✅ Data validation passed!"
+
+      - name: 📊 Upload data quality report
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-quality-report
+          path: logs/data_quality_report.json
+          retention-days: 30
+
+      - name: 💬 Comment on PR (if PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('logs/data_quality_report.json', 'utf8'));
+
+            const comment = `## 🔍 Data Validation Results
+
+            **Status:** ✅ Passed
+
+            **Dataset Info:**
+            - Total rows: ${report.dataset_info.total_rows}
+            - Total features: ${report.dataset_info.total_features}
+
+            **Quality Checks:**
+            - Missing values: ${report.quality_checks.missing_values ? '⚠️ Found' : '✅ None'}
+            - Duplicates: ${report.quality_checks.duplicate_rows ? '⚠️ Found' : '✅ None'}
+            - Outliers detected: ${report.quality_checks.outliers_detected ? '⚠️ Yes' : '✅ No'}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # ============================================================================
+  # JOB 2: Model Training & Evaluation
+  # ============================================================================
+  train-model:
+    name: 🤖 Train & Evaluate Model
+    runs-on: ubuntu-latest
+    needs: data-validation  # Only runs if data validation succeeds
+
+    outputs:
+      model-version: ${{ steps.train.outputs.version }}
+      r2-score: ${{ steps.train.outputs.r2 }}
+      rmse: ${{ steps.train.outputs.rmse }}
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 📦 Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🔧 Feature Engineering
+        run: |
+          echo "Creating ML features..."
+          python pipeline/stage_02_feature_engineering.py
+          echo "✅ Feature engineering complete!"
+
+      - name: 🤖 Train Model with MLflow
+        id: train
+        run: |
+          echo "Training model with MLflow tracking..."
+          python pipeline/stage_03_train_model_mlflow.py
+
+          # Extract metrics from evaluation report
+          R2=$(jq -r '.metrics.r2_score' logs/evaluation_report.json)
+          RMSE=$(jq -r '.metrics.rmse' logs/evaluation_report.json)
+          VERSION=$(jq -r '.model_metadata.version_id' logs/evaluation_report.json || echo "unknown")
+
+          echo "Model trained!"
+          echo "  R² Score: $R2"
+          echo "  RMSE: $RMSE"
+          echo "  Version: $VERSION"
+
+          # Set outputs for next jobs
+          echo "r2=$R2" >> $GITHUB_OUTPUT
+          echo "rmse=$RMSE" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Check quality gates
+          R2_THRESHOLD=0.75
+          RMSE_THRESHOLD=50000
+
+          if (( $(echo "$R2 < $R2_THRESHOLD" | bc -l) )); then
+            echo "❌ Model R² ($R2) below threshold ($R2_THRESHOLD)"
+            exit 1
+          fi
+
+          if (( $(echo "$RMSE > $RMSE_THRESHOLD" | bc -l) )); then
+            echo "❌ Model RMSE ($RMSE) above threshold ($RMSE_THRESHOLD)"
+            exit 1
+          fi
+
+          echo "✅ Model passed quality gates!"
+
+      - name: 📊 Upload evaluation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-report
+          path: logs/evaluation_report.json
+          retention-days: 30
+
+      - name: 📦 Upload model artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-artifacts
+          path: |
+            models/saved_models/*.joblib
+            models/model_registry/registry.json
+          retention-days: 90
+
+      - name: 💬 Comment on PR (if PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('logs/evaluation_report.json', 'utf8'));
+
+            const r2 = report.metrics.r2_score.toFixed(4);
+            const rmse = report.metrics.rmse.toFixed(0);
+            const mae = report.metrics.mae.toFixed(0);
+            const r2_pct = (r2 * 100).toFixed(2);
+
+            const comment = `## 🤖 Model Training Results
+
+            **Status:** ✅ Passed Quality Gates
+
+            **Performance Metrics:**
+            - R² Score: **${r2}** (${r2_pct}%)
+            - RMSE: **$${rmse}**
+            - MAE: **$${mae}**
+
+            **Quality Gates:**
+            - ✅ R² ≥ 0.75
+            - ✅ RMSE ≤ $50,000
+
+            **Model Version:** ${report.model_metadata.version_id || 'N/A'}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # ============================================================================
+  # JOB 3: Push Artifacts to Registry (Only on main branch)
+  # ============================================================================
+  push-to-registry:
+    name: 📤 Push to Model Registry
+    runs-on: ubuntu-latest
+    needs: train-model
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 📦 Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 📥 Download model artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: model-artifacts
+          path: models/
+
+      - name: 📤 Push to MLflow Model Registry
+        run: |
+          echo "Pushing model to registry..."
+          python save_pipeline_to_mlflow.py
+
+          echo "✅ Model pushed to MLflow registry!"
+          echo "  Model Name: housing_price_predictor_pipeline"
+          echo "  R² Score: ${{ needs.train-model.outputs.r2-score }}"
+          echo "  RMSE: ${{ needs.train-model.outputs.rmse }}"
+
+      # Optional: Push to external registry (AWS S3, GCS, Azure Blob)
+      # - name: 📤 Push to Cloud Storage
+      #   run: |
+      #     # Example: Push to S3
+      #     aws s3 cp models/saved_models/ s3://your-bucket/models/ --recursive
+
+      - name: 🏷️ Create GitHub Release Tag
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ needs.train-model.outputs.model-version }}';
+            const r2 = '${{ needs.train-model.outputs.r2-score }}';
+            const rmse = '${{ needs.train-model.outputs.rmse }}';
+
+            const tagName = `model-${version}`;
+            const releaseName = `Model ${version}`;
+
+            const releaseBody = `## 🤖 Model Release
+
+            **Version:** ${version}
+            **Date:** ${new Date().toISOString().split('T')[0]}
+
+            **Performance:**
+            - R² Score: ${r2}
+            - RMSE: $${rmse}
+
+            **Artifacts:**
+            - Model trained and validated
+            - Pushed to MLflow registry
+            - Available for deployment
+
+            **Quality Gates:** ✅ All Passed
+            `;
+
+            try {
+              await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: tagName,
+                name: releaseName,
+                body: releaseBody,
+                draft: false,
+                prerelease: false
+              });
+              console.log(`✅ Created release: ${tagName}`);
+            } catch (error) {
+              console.log(`Release already exists or error: ${error.message}`);
+            }
+
+      - name: 💬 Notify Success
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `## ✅ Model Deployed Successfully!
+
+            **Model Version:** ${{ needs.train-model.outputs.model-version }}
+            **R² Score:** ${{ needs.train-model.outputs.r2-score }}
+            **RMSE:** $${{ needs.train-model.outputs.rmse }}
+
+            **Registry:** MLflow Model Registry
+            **Status:** Available for deployment
+
+            **Next Steps:**
+            1. Review model in MLflow UI
+            2. Test in staging environment
+            3. Promote to production when ready
+            `;
+
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: comment
+            });
+
+  # ============================================================================
+  # JOB 4: Security & Code Quality Checks (Parallel)
+  # ============================================================================
+  code-quality:
+    name: 🔒 Code Quality & Security
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 📦 Install linting tools
+        run: |
+          pip install flake8 black isort bandit
+
+      - name: 🎨 Check code formatting (Black)
+        run: |
+          black --check src/ pipeline/ || echo "⚠️ Code formatting issues found"
+
+      - name: 🔍 Lint code (Flake8)
+        run: |
+          flake8 src/ pipeline/ --max-line-length=120 || echo "⚠️ Linting issues found"
+
+      - name: 🔒 Security scan (Bandit)
+        run: |
+          bandit -r src/ pipeline/ || echo "⚠️ Security issues found"
+
+      - name: 📋 Check dependencies for vulnerabilities
+        run: |
+          pip install safety
+          safety check --json || echo "⚠️ Vulnerable dependencies found"
+
+# ============================================================================
+# Workflow Summary
+# ============================================================================
+#
+# This CI/CD pipeline automates your ML workflow:
+#
+# On Pull Request:
+#   1. ✅ Validates data quality
+#   2. ✅ Trains model
+#   3. ✅ Checks quality gates
+#   4. ✅ Comments results on PR
+#   5. ❌ Does NOT push to registry
+#
+# On Push to Main:
+#   1. ✅ Validates data quality
+#   2. ✅ Trains model
+#   3. ✅ Checks quality gates
+#   4. ✅ Pushes to MLflow registry
+#   5. ✅ Creates GitHub release
+#   6. ✅ Notifies team
+#
+# Quality Gates:
+#   - R² Score must be ≥ 0.75
+#   - RMSE must be ≤ $50,000
+#   - Data validation must pass
+#
+# Artifacts Stored:
+#   - Data quality reports (30 days)
+#   - Evaluation reports (30 days)
+#   - Model files (90 days)
+#
+# ============================================================================

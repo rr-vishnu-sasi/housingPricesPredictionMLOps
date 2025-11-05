@@ -1,0 +1,125 @@
+# Scheduled Model Retraining
+# Runs automatically every day at midnight (like Airflow)
+# This is your "production" automated retraining
+
+name: Scheduled Model Retraining
+
+on:
+  # Run daily at midnight UTC
+  schedule:
+    - cron: '0 0 * * *'  # Every day at 00:00 UTC
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  scheduled-retrain:
+    name: 🔄 Daily Model Retraining
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 📦 Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🚀 Run Complete Pipeline
+        id: pipeline
+        run: |
+          echo "Starting daily retraining pipeline..."
+
+          # Run all stages
+          python pipeline/stage_01_ingest_data.py
+          python pipeline/stage_02_feature_engineering.py
+          python pipeline/stage_03_train_model_mlflow.py
+
+          # Extract metrics
+          R2=$(jq -r '.metrics.r2_score' logs/evaluation_report.json)
+          RMSE=$(jq -r '.metrics.rmse' logs/evaluation_report.json)
+
+          echo "Pipeline complete!"
+          echo "  R²: $R2"
+          echo "  RMSE: $RMSE"
+
+          # Set outputs
+          echo "r2=$R2" >> $GITHUB_OUTPUT
+          echo "rmse=$RMSE" >> $GITHUB_OUTPUT
+
+          # Quality gates
+          if (( $(echo "$R2 < 0.75" | bc -l) )) || (( $(echo "$RMSE > 50000" | bc -l) )); then
+            echo "❌ Model failed quality gates!"
+            exit 1
+          fi
+
+          echo "✅ Model passed quality gates!"
+
+      - name: 📤 Push to Registry
+        if: success()
+        run: |
+          echo "Pushing model to registry..."
+          python save_pipeline_to_mlflow.py
+          echo "✅ Model deployed!"
+
+      - name: 📧 Send Success Notification
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '✅ Daily Retraining Successful - ' + new Date().toISOString().split('T')[0],
+              body: `## ✅ Scheduled Retraining Complete
+
+              **Date:** ${new Date().toISOString()}
+              **R² Score:** ${{ steps.pipeline.outputs.r2 }}
+              **RMSE:** $${{ steps.pipeline.outputs.rmse }}
+
+              **Status:** Model trained, validated, and deployed
+
+              **Next Steps:**
+              - Model available in MLflow registry
+              - Ready for staging testing
+              - Can promote to production
+
+              [View MLflow UI](http://localhost:5000) (when running locally)
+              `,
+              labels: ['automated', 'model-training', 'success']
+            });
+
+      - name: 🚨 Send Failure Alert
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '❌ Daily Retraining FAILED - ' + new Date().toISOString().split('T')[0],
+              body: `## ❌ Scheduled Retraining Failed
+
+              **Date:** ${new Date().toISOString()}
+              **Status:** Pipeline failed
+
+              **Action Required:**
+              1. Check workflow logs
+              2. Investigate failure cause
+              3. Fix issues
+              4. Manual rerun may be needed
+
+              [View Workflow Run](${context.payload.repository.html_url}/actions/runs/${context.runId})
+              `,
+              labels: ['automated', 'model-training', 'failure', 'urgent']
+            });
