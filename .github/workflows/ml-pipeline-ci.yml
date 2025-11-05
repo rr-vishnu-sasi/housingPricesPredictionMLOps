@@ -125,6 +125,12 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: 🔍 Data Ingestion (for training job)
+        run: |
+          echo "Fetching and validating data..."
+          python pipeline/stage_01_ingest_data.py
+          echo "✅ Data ready!"
+
       - name: 🔧 Feature Engineering
         run: |
           echo "Creating ML features..."
