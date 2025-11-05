@@ -9,22 +9,13 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'src/**'
-      - 'pipeline/**'
-      - 'config/config.yaml'
-      - 'requirements.txt'
-      - 'dvc.yaml'
+    # Removed paths filter - run on any push to main
 
   # Trigger on pull requests to main
   pull_request:
     branches:
       - main
-    paths:
-      - 'src/**'
-      - 'pipeline/**'
-      - 'config/config.yaml'
-      - 'requirements.txt'
+    # Removed paths filter - validate all PRs
 
   # Allow manual trigger
   workflow_dispatch:
