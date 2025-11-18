@@ -1,0 +1,79 @@
+# Don't copy these files/directories into Docker image
+# Keeps image small and secure
+
+# Virtual environments
+.venv/
+.venv_airflow/
+venv/
+env/
+
+# Git
+.git/
+.gitignore
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Large data files (model artifacts are kept!)
+data/raw/*.csv
+data/raw/*.parquet
+data/processed/*.csv
+data/processed/*.parquet
+data/features/*.csv
+data/features/*.parquet
+
+# Logs
+logs/*.log
+logs/mlruns/
+airflow/logs/
+
+# Airflow
+airflow/airflow.db
+airflow/airflow.cfg
+airflow/__pycache__/
+
+# Documentation (not needed in container)
+*.md
+!README.md
+
+# Tests
+tests/
+.pytest_cache/
+.coverage
+
+# Jupyter notebooks
+notebooks/
+*.ipynb
+.ipynb_checkpoints/
+
+# DVC cache
+.dvc/cache/
+.dvc/tmp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# CI/CD
+.github/
+
+# Docker files (don't copy into itself!)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Scripts not needed in container
+*.sh
+!docker-entrypoint.sh
+
+# Examples (not needed for serving)
+examples/
